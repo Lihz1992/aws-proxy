@@ -13,9 +13,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
+	"flag"
 )
 
-var creds *credentials.Credentials
+var (
+	creds *credentials.Credentials
+	port int
+)
 
 func ReverseProxyHandler(ctx *fasthttp.RequestCtx) {
 	req := &ctx.Request
@@ -95,13 +99,17 @@ func resolve(auth []byte) (endpoint *url.URL, region string, service string) {
 	return
 }
 
+func init() {
+	flag.IntVar(&port, "port", 8082, "Binding port")
+}
+
 func main() {
 	creds = defaults.CredChain(defaults.Config(), defaults.Handlers())
 	if _, err := creds.Get(); err != nil {
 		fmt.Println(err)
 		return
 	}
-	if err := fasthttp.ListenAndServe(":8082", ReverseProxyHandler); err != nil {
+	if err := fasthttp.ListenAndServe(fmt.Sprintf(":%d", port), ReverseProxyHandler); err != nil {
 		log.Println("error in fasthttp server: %s", err)
 	}
 }
